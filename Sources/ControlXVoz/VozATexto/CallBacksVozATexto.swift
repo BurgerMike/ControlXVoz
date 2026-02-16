@@ -44,3 +44,4 @@ public struct CallbacksVozATexto: Sendable {
         self.alError = alError
     }
 }
+
