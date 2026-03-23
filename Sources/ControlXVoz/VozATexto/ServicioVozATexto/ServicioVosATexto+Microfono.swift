@@ -1,46 +1,11 @@
 //
-//  ServicioVozATexto.swift
+//  ServicioVosATexto+Microfono.swift
+//  ControlXVoz
+//
+//  Created by Miguel Carlos Elizondo Martinez on 23/03/26.
 //
 
-import Foundation
 import AVFoundation
-import Speech
-
-public actor VozATexto {
-
-    // MARK: - Propiedades
-
-    private let config: ConfigVozATexto
-    private let continuacion: AsyncStream<EventoVozATexto>.Continuation
-    public  let eventos: AsyncStream<EventoVozATexto>
-
-    private var permisosListos = false
-    private(set) var estado: EstadoVozATexto = .inactivo
-
-    private let audioEngine = AVAudioEngine()
-    private var tapInstalado = false
-
-    private var tareaSpeech: SFSpeechRecognitionTask?
-    private var speechRequest: SFSpeechAudioBufferRecognitionRequest?
-
-    private var ultimoTiempoConVoz: TimeInterval = 0
-    private var tareaEndpointing: Task<Void, Never>?
-    private var tareaTimeout: Task<Void, Never>?
-
-    private var ultimoTexto = ""
-    private var cierreIntencional = false
-
-    // MARK: - Init
-
-    public init(config: ConfigVozATexto = .init()) {
-        self.config = config
-        var cap: AsyncStream<EventoVozATexto>.Continuation!
-        self.eventos = AsyncStream { cap = $0 }
-        self.continuacion = cap
-    }
-}
-
-// MARK: - Micrófono
 
 extension VozATexto {
 
@@ -83,6 +48,42 @@ extension VozATexto {
             ultimoTiempoConVoz = CFAbsoluteTimeGetCurrent()
         }
     }
+
+    func iniciarVAD() {
+        tareaEndpointing?.cancel()
+        tareaTimeout?.cancel()
+
+        let silencio = max(config.tiempoSilencioParaAutoDetener, 1.8)
+
+        tareaEndpointing = Task { [weak self] in
+            while !Task.isCancelled {
+                try? await Task.sleep(for: .milliseconds(150))
+                guard let self else { return }
+                guard case .escuchando = await self.estado else { continue }
+
+                let ahora = CFAbsoluteTimeGetCurrent()
+                let ultimo = await self.ultimoTiempoConVoz
+
+                if (ahora - ultimo) >= silencio {
+                    await self.finalizarConTexto(await self.ultimoTexto)
+                    return
+                }
+            }
+        }
+
+        tareaTimeout = Task { [weak self] in
+            try? await Task.sleep(for: .seconds(45))
+            guard let self else { return }
+            await self.finalizarConTexto(await self.ultimoTexto)
+        }
+    }
+
+    func detenerVAD() {
+        tareaEndpointing?.cancel()
+        tareaEndpointing = nil
+        tareaTimeout?.cancel()
+        tareaTimeout = nil
+    }
 }
 
 // MARK: - RMS
@@ -106,4 +107,3 @@ private func calcularRMS(_ buffer: AVAudioPCMBuffer) -> Float {
 
     return 0
 }
-
