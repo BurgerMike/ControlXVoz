@@ -3,28 +3,19 @@
 
 import PackageDescription
 
+
 let package = Package(
     name: "ControlXVoz",
     platforms: [
-           .iOS(.v17),
-           .macOS(.v14)
-       ],
+        .iOS(.v17),
+        .macOS(.v14),
+        .watchOS(.v10)
+    ],
     products: [
-        // Products define the executables and libraries a package produces, making them visible to other packages.
-        .library(
-            name: "ControlXVoz",
-            targets: ["ControlXVoz"]
-        ),
+        .library(name: "ControlXVoz", targets: ["ControlXVoz"])
     ],
     targets: [
-        // Targets are the basic building blocks of a package, defining a module or a test suite.
-        // Targets can depend on other targets in this package and products from dependencies.
-        .target(
-            name: "ControlXVoz"
-        ),
-        .testTarget(
-            name: "ControlXVozTests",
-            dependencies: ["ControlXVoz"]
-        ),
+        .target(name: "ControlXVoz"),
+        .testTarget(name: "ControlXVozTests", dependencies: ["ControlXVoz"])
     ]
 )
