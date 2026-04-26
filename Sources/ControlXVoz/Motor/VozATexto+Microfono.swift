@@ -10,8 +10,16 @@ import AVFAudio
 
 extension VozATexto {
     func iniciarMicrofono() throws {
-        let input = audioEngine.inputNode
         
+        // iOS necesita activar la sesión de audio antes de usar el micrófono.
+        // macOS no tiene AVAudioSession — por eso el #if.
+        #if os(iOS)
+        let sesion = AVAudioSession.sharedInstance()
+        try sesion.setCategory(.record, mode: .measurement, options: .duckOthers)
+        try sesion.setActive(true, options: .notifyOthersOnDeactivation)
+        #endif
+        
+        let input = audioEngine.inputNode
         if tapInstalado {
             input.removeTap(onBus: 0)
             tapInstalado = false
