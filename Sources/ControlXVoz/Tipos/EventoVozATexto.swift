@@ -7,7 +7,7 @@
 
 import Foundation
 
-public enum EventosVozATexto: Sendable {
+public enum EventoVozATexto: Sendable {
     
     case estado(EstadoVozATexto)
     
